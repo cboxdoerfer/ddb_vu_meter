@@ -75,6 +75,7 @@ typedef struct {
     GtkWidget *popup;
     GtkWidget *popup_item;
     cairo_surface_t *surf;
+    cairo_surface_t *surf_png;
     guint drawtimer;
     uint32_t colors[GRADIENT_TABLE_SIZE];
     float data[MAX_CHANNELS];
@@ -86,6 +87,9 @@ typedef struct {
     intptr_t mutex;
 } w_vumeter_t;
 
+enum STYLE { STYLE_BARS = 0, STYLE_RETRO = 1 };
+
+static int CONFIG_STYLE = STYLE_BARS;
 static int CONFIG_REFRESH_INTERVAL = 25;
 static int CONFIG_DB_RANGE = 70;
 static int CONFIG_ENABLE_HGRID = 1;
@@ -419,6 +423,9 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     GtkWidget *hgrid;
     GtkWidget *vgrid;
     GtkWidget *bar_mode;
+    GtkWidget *hbox06;
+    GtkWidget *style_label;
+    GtkWidget *style;
     GtkWidget *hbox05;
     GtkWidget *gradient_orientation_label;
     GtkWidget *gradient_orientation;
@@ -591,6 +598,21 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT(gradient_orientation), STR_GRADIENT_VERTICAL);
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(gradient_orientation), STR_GRADIENT_HORIZONTAL);
 
+    hbox06 = gtk_hbox_new (FALSE, 8);
+    gtk_widget_show (hbox06);
+    gtk_box_pack_start (GTK_BOX (vbox02), hbox06, FALSE, FALSE, 0);
+
+    style_label = gtk_label_new (NULL);
+    gtk_label_set_markup (GTK_LABEL (style_label),"Style:");
+    gtk_widget_show (style_label);
+    gtk_box_pack_start (GTK_BOX (hbox06), style_label, FALSE, TRUE, 0);
+
+    style = gtk_combo_box_text_new ();
+    gtk_widget_show (style);
+    gtk_box_pack_start (GTK_BOX (hbox06), style, TRUE, TRUE, 0);
+    gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT(style), "Bars");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(style), "Retro");
+
     hgrid = gtk_check_button_new_with_label ("Horizontal grid");
     gtk_widget_show (hgrid);
     gtk_box_pack_start (GTK_BOX (vbox02), hgrid, FALSE, FALSE, 0);
@@ -626,6 +648,7 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (vgrid), CONFIG_ENABLE_VGRID);
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (bar_mode), CONFIG_ENABLE_BAR_MODE);
     gtk_combo_box_set_active (GTK_COMBO_BOX (gradient_orientation), CONFIG_GRADIENT_ORIENTATION);
+    gtk_combo_box_set_active (GTK_COMBO_BOX (style), CONFIG_STYLE);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (num_colors), CONFIG_NUM_COLORS);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (db_range), CONFIG_DB_RANGE);
     gtk_color_button_set_color (GTK_COLOR_BUTTON (color_bg), &CONFIG_COLOR_BG);
@@ -711,6 +734,16 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
             else {
                 CONFIG_GRADIENT_ORIENTATION = -1;
             }
+            snprintf (text, sizeof (text), "%s", gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (style)));
+            if (strcmp (text, "Bars") == 0) {
+                CONFIG_STYLE = STYLE_BARS;
+            }
+            else if (strcmp (text, "Retro") == 0) {
+                CONFIG_STYLE = STYLE_RETRO;
+            }
+            else {
+                CONFIG_STYLE = STYLE_BARS;
+            }
             save_config ();
             deadbeef->sendmessage (DB_EV_CONFIGCHANGED, 0, 0, 0);
         }
@@ -737,6 +770,10 @@ w_vumeter_destroy (ddb_gtkui_widget_t *w) {
         cairo_surface_destroy (s->surf);
         s->surf = NULL;
     }
+    if (s->surf_png) {
+        cairo_surface_destroy (s->surf_png);
+        s->surf_png = NULL;
+    }
     if (s->mutex) {
         deadbeef->mutex_free (s->mutex);
         s->mutex = 0;
@@ -757,19 +794,131 @@ vumeter_wavedata_listener (void *ctx, ddb_audio_data_t *data) {
     w->channels = MIN (MAX_CHANNELS, data->fmt->channels);
     int nsamples = data->nframes/w->channels;
 
-    for (int i = 0; i < data->fmt->channels; i++) {
-        w->data[i] = 0;
-    }
     for (int c = 0; c < w->channels; c++) {
+        w->data[c] = 0;
         for (int s = 0; s < nsamples + c; s++) {
             w->data[c] += (data->data[ftoi (s * data->fmt->channels) + c] * data->data[ftoi (s * data->fmt->channels) + c]);
         }
-    }
-    for (int i = 0; i < data->fmt->channels; i++) {
-        w->data[i] /= nsamples;
-        w->data[i] = sqrt (w->data[i]);
+        w->data[c] = sqrt (w->data[c]/nsamples);
     }
     deadbeef->mutex_unlock (w->mutex);
+}
+
+static void
+vumeter_draw_retro (w_vumeter_t *w, cairo_t *cr, int width, int height)
+{
+    if (!w->surf_png) {
+        w->surf_png = cairo_image_surface_create_from_png ("/home/christian/src/ddb_vu_meter/vumeter.png");
+    }
+
+    int m_radius = 130;
+    float start = M_PI * 3/4;
+    float value = 0;
+    int c = 0;
+    for (; c < w->channels; c++) {
+        value = MAX (value, w->bars[c]);
+    }
+    cairo_set_source_surface (cr, w->surf_png, 0, 0);
+    cairo_paint (cr);
+    cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
+    cairo_set_line_width(cr, 2);
+    int surf_width = cairo_image_surface_get_width (w->surf_png);
+    int surf_height = cairo_image_surface_get_height (w->surf_png);
+    cairo_move_to (cr, surf_width/2, surf_height - 23);
+    cairo_line_to (cr, surf_width/2 + m_radius * cos (value * M_PI / (CONFIG_DB_RANGE*2.5) - start), surf_height - 23 + m_radius * sin (value * M_PI / (CONFIG_DB_RANGE*2.5)-start));
+    cairo_stroke (cr);
+}
+
+static void
+vumeter_draw_bars (w_vumeter_t *w, cairo_t *cr, int width, int height)
+{
+    // start drawing
+    int bands = MIN (w->channels, MAX_CHANNELS);
+    bands = MAX (bands, 1);
+    if (!w->surf || cairo_image_surface_get_width (w->surf) != width || cairo_image_surface_get_height (w->surf) != height) {
+        printf("create surf\n");
+        if (w->surf) {
+            cairo_surface_destroy (w->surf);
+            w->surf = NULL;
+        }
+        w->surf = cairo_image_surface_create (CAIRO_FORMAT_RGB24, width, height);
+    }
+    float base_s = (height / (float)CONFIG_DB_RANGE);
+
+    cairo_surface_flush (w->surf);
+
+    unsigned char *data = cairo_image_surface_get_data (w->surf);
+    if (!data) {
+        return FALSE;
+    }
+    int stride = cairo_image_surface_get_stride (w->surf);
+    memset (data, 0, height * stride);
+
+    int barw = CLAMP (width / bands, 2, 1000);
+
+    //draw background
+    _draw_background (data, width, height, CONFIG_COLOR_BG32);
+    // draw vertical grid
+    if (CONFIG_ENABLE_VGRID) {
+        int num_lines = MIN (width/barw, bands);
+        for (int i = 1; i < num_lines; i++) {
+            _draw_vline (data, stride, barw * i, 0, height-1, CONFIG_COLOR_VGRID32);
+        }
+    }
+
+    int hgrid_num = CONFIG_DB_RANGE/10;
+    // draw horizontal grid
+    if (CONFIG_ENABLE_HGRID && height > 2*hgrid_num && width > 1) {
+        for (int i = 1; i < hgrid_num; i++) {
+            _draw_hline (data, stride, 0, ftoi (i/(float)hgrid_num * height), width-1, CONFIG_COLOR_HGRID32);
+        }
+    }
+
+    for (gint i = 0; i < bands; i++)
+    {
+        int x = barw * i;
+        int y = height - ftoi (w->bars[i] * base_s);
+        if (y < 0) {
+            y = 0;
+        }
+        int bw = barw-1;
+        if (x + bw >= width) {
+            bw = width-x-1;
+        }
+        if (CONFIG_GRADIENT_ORIENTATION == 0) {
+            if (CONFIG_ENABLE_BAR_MODE == 0) {
+                _draw_bar_gradient_v (w, data, stride, x+1, y, bw, height-y, height);
+            }
+            else {
+                _draw_bar_gradient_bar_mode_v (w, data, stride, x+1, y, bw, height-y, height);
+            }
+        }
+        else {
+            if (CONFIG_ENABLE_BAR_MODE == 0) {
+                _draw_bar_gradient_h (w, data, stride, x+1, y, bw, height-y, width);
+            }
+            else {
+                _draw_bar_gradient_bar_mode_h (w, data, stride, x+1, y, bw, height-y, width);
+            }
+        }
+        y = height - w->peaks[i] * base_s;
+        if (y < height-1) {
+            if (CONFIG_GRADIENT_ORIENTATION == 0) {
+                _draw_bar_gradient_v (w, data, stride, x + 1, y, bw, 1, height);
+            }
+            else {
+                _draw_bar_gradient_h (w, data, stride, x + 1, y, bw, 1, width);
+            }
+        }
+    }
+
+    cairo_surface_mark_dirty (w->surf);
+
+    cairo_save (cr);
+    cairo_set_source_surface (cr, w->surf, 0, 0);
+    cairo_rectangle (cr, 0, 0, width, height);
+    cairo_fill (cr);
+    cairo_restore (cr);
 }
 
 static gboolean
@@ -793,7 +942,7 @@ vumeter_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
     if (deadbeef->get_output ()->state () == OUTPUT_STATE_PLAYING) {
         for (int i = 0; i < bands; i++)
         {
-            float x = CONFIG_DB_RANGE + (20.0 * log10 (w->data[i]));
+            float x = CONFIG_DB_RANGE + (10.0 * log10f (w->data[i]));
             // TODO: get rid of hardcoding
             //x += CONFIG_DB_RANGE - 63;
             //if (x > CONFIG_DB_RANGE) {
@@ -840,91 +989,17 @@ vumeter_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
         }
     }
 
-    // start drawing
-    if (!w->surf || cairo_image_surface_get_width (w->surf) != a.width || cairo_image_surface_get_height (w->surf) != a.height) {
-        if (w->surf) {
-            cairo_surface_destroy (w->surf);
-            w->surf = NULL;
-        }
-        w->surf = cairo_image_surface_create (CAIRO_FORMAT_RGB24, a.width, a.height);
+    switch (CONFIG_STYLE) {
+        case STYLE_BARS:
+            vumeter_draw_bars (w, cr, width, height);
+            break;
+        case STYLE_RETRO:
+            vumeter_draw_retro (w, cr, width, height);
+            break;
+        default:
+            vumeter_draw_bars (w, cr, width, height);
+            break;
     }
-    float base_s = (height / (float)CONFIG_DB_RANGE);
-
-    cairo_surface_flush (w->surf);
-
-    unsigned char *data = cairo_image_surface_get_data (w->surf);
-    if (!data) {
-        return FALSE;
-    }
-    int stride = cairo_image_surface_get_stride (w->surf);
-    memset (data, 0, a.height * stride);
-
-    int barw = CLAMP (width / bands, 2, 1000);
-
-    //draw background
-    _draw_background (data, a.width, a.height, CONFIG_COLOR_BG32);
-    // draw vertical grid
-    if (CONFIG_ENABLE_VGRID) {
-        int num_lines = MIN (a.width/barw, bands);
-        for (int i = 1; i < num_lines; i++) {
-            _draw_vline (data, stride, barw * i, 0, height-1, CONFIG_COLOR_VGRID32);
-        }
-    }
-
-    int hgrid_num = CONFIG_DB_RANGE/10;
-    // draw horizontal grid
-    if (CONFIG_ENABLE_HGRID && a.height > 2*hgrid_num && a.width > 1) {
-        for (int i = 1; i < hgrid_num; i++) {
-            _draw_hline (data, stride, 0, ftoi (i/(float)hgrid_num * a.height), a.width-1, CONFIG_COLOR_HGRID32);
-        }
-    }
-
-    for (gint i = 0; i < bands; i++)
-    {
-        int x = barw * i;
-        int y = a.height - ftoi (w->bars[i] * base_s);
-        if (y < 0) {
-            y = 0;
-        }
-        int bw = barw-1;
-        if (x + bw >= a.width) {
-            bw = a.width-x-1;
-        }
-        if (CONFIG_GRADIENT_ORIENTATION == 0) {
-            if (CONFIG_ENABLE_BAR_MODE == 0) {
-                _draw_bar_gradient_v (user_data, data, stride, x+1, y, bw, a.height-y, a.height);
-            }
-            else {
-                _draw_bar_gradient_bar_mode_v (user_data, data, stride, x+1, y, bw, a.height-y, a.height);
-            }
-        }
-        else {
-            if (CONFIG_ENABLE_BAR_MODE == 0) {
-                _draw_bar_gradient_h (user_data, data, stride, x+1, y, bw, a.height-y, a.width);
-            }
-            else {
-                _draw_bar_gradient_bar_mode_h (user_data, data, stride, x+1, y, bw, a.height-y, a.width);
-            }
-        }
-        y = a.height - w->peaks[i] * base_s;
-        if (y < a.height-1) {
-            if (CONFIG_GRADIENT_ORIENTATION == 0) {
-                _draw_bar_gradient_v (user_data, data, stride, x + 1, y, bw, 1, a.height);
-            }
-            else {
-                _draw_bar_gradient_h (user_data, data, stride, x + 1, y, bw, 1, a.width);
-            }
-        }
-    }
-
-    cairo_surface_mark_dirty (w->surf);
-
-    cairo_save (cr);
-    cairo_set_source_surface (cr, w->surf, 0, 0);
-    cairo_rectangle (cr, 0, 0, a.width, a.height);
-    cairo_fill (cr);
-    cairo_restore (cr);
-
     deadbeef->mutex_unlock (w->mutex);
     return FALSE;
 }
@@ -1006,6 +1081,7 @@ w_vu_meter_create (void) {
     w->popup = gtk_menu_new ();
     w->popup_item = gtk_menu_item_new_with_mnemonic ("Configure");
     w->mutex = deadbeef->mutex_create ();
+    gtk_widget_set_size_request (w->base.widget, 16, 16);
 
     gtk_container_add (GTK_CONTAINER (w->base.widget), w->drawarea);
     gtk_container_add (GTK_CONTAINER (w->popup), w->popup_item);
