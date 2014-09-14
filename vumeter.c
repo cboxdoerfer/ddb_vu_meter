@@ -808,7 +808,16 @@ static void
 vumeter_draw_retro (w_vumeter_t *w, cairo_t *cr, int width, int height)
 {
     if (!w->surf_png) {
-        w->surf_png = cairo_image_surface_create_from_png ("/home/christian/src/ddb_vu_meter/vumeter.png");
+        char path[PATH_MAX];
+        const char *home_dir = getenv ("HOME");
+        if (home_dir && strcmp(home_dir, "") == 0) {
+            home_dir = NULL;
+        }
+        const int sz = snprintf (path, PATH_MAX, "%s/vumeter.png", home_dir);
+        if (!home_dir || !path) {
+            return;
+        }
+        w->surf_png = cairo_image_surface_create_from_png (path);
     }
 
     int m_radius = 130;
