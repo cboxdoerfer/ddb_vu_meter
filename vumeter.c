@@ -442,6 +442,7 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     vumeter_properties = gtk_dialog_new ();
     gtk_window_set_title (GTK_WINDOW (vumeter_properties), "vumeter Properties");
     gtk_window_set_type_hint (GTK_WINDOW (vumeter_properties), GDK_WINDOW_TYPE_HINT_DIALOG);
+    gtk_window_set_resizable (GTK_WINDOW (vumeter_properties), FALSE);
 
     config_dialog = gtk_dialog_get_content_area (GTK_DIALOG (vumeter_properties));
     gtk_widget_show (config_dialog);
