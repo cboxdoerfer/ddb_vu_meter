@@ -786,9 +786,24 @@ w_vumeter_destroy (ddb_gtkui_widget_t *w) {
 }
 
 gboolean
-w_vumeter_draw_cb (void *data) {
+vumeter_draw_cb (void *data) {
     w_vumeter_t *s = data;
     gtk_widget_queue_draw (s->drawarea);
+    return TRUE;
+}
+
+static gboolean
+vumeter_set_refresh_interval (gpointer user_data, int interval)
+{
+    w_vumeter_t *w = user_data;
+    if (!w || interval <= 0) {
+        return FALSE;
+    }
+    if (w->drawtimer) {
+        g_source_remove (w->drawtimer);
+        w->drawtimer = 0;
+    }
+    w->drawtimer = g_timeout_add (interval, vumeter_draw_cb, w);
     return TRUE;
 }
 
@@ -1055,13 +1070,35 @@ vumeter_message (ddb_gtkui_widget_t *widget, uint32_t id, uintptr_t ctx, uint32_
     w_vumeter_t *w = (w_vumeter_t *)widget;
 
     switch (id) {
-        case DB_EV_CONFIGCHANGED:
-            on_config_changed (w, ctx);
+        case DB_EV_SONGSTARTED:
+            vumeter_set_refresh_interval (w, CONFIG_REFRESH_INTERVAL);
+            break;
+        case DB_EV_PAUSED:
+            if (deadbeef->get_output ()->state () == OUTPUT_STATE_PLAYING) {
+                vumeter_set_refresh_interval (w, CONFIG_REFRESH_INTERVAL);
+            }
+            else {
+                if (w->drawtimer) {
+                    g_source_remove (w->drawtimer);
+                    w->drawtimer = 0;
+                }
+            }
+            break;
+        case DB_EV_STOP:
             if (w->drawtimer) {
                 g_source_remove (w->drawtimer);
                 w->drawtimer = 0;
             }
-            w->drawtimer = g_timeout_add (CONFIG_REFRESH_INTERVAL, w_vumeter_draw_cb, w);
+            deadbeef->mutex_lock (w->mutex);
+            memset (w->data, 0, sizeof (float) * MAX_CHANNELS);
+            memset (w->bars, 0, sizeof (float) * MAX_CHANNELS);
+            memset (w->peaks, 0, sizeof (float) * MAX_CHANNELS);
+            deadbeef->mutex_unlock (w->mutex);
+            gtk_widget_queue_draw (w->drawarea);
+            break;
+        case DB_EV_CONFIGCHANGED:
+            on_config_changed (w, ctx);
+            vumeter_set_refresh_interval (w, CONFIG_REFRESH_INTERVAL);
             break;
     }
     return 0;
@@ -1074,11 +1111,7 @@ w_vumeter_init (ddb_gtkui_widget_t *w) {
     deadbeef->mutex_lock (s->mutex);
     create_gradient_table (s, CONFIG_GRADIENT_COLORS, CONFIG_NUM_COLORS);
 
-    if (s->drawtimer) {
-        g_source_remove (s->drawtimer);
-        s->drawtimer = 0;
-    }
-    s->drawtimer = g_timeout_add (CONFIG_REFRESH_INTERVAL, w_vumeter_draw_cb, w);
+    vumeter_set_refresh_interval (w, CONFIG_REFRESH_INTERVAL);
     deadbeef->mutex_unlock (s->mutex);
 }
 
