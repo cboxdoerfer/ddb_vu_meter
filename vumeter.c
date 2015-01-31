@@ -44,25 +44,26 @@
 #define     STR_GRADIENT_VERTICAL "Vertical"
 #define     STR_GRADIENT_HORIZONTAL "Horizontal"
 
-#define     CONFSTR_MS_REFRESH_INTERVAL       "vu_meter.refresh_interval"
-#define     CONFSTR_MS_DB_RANGE               "vu_meter.db_range"
-#define     CONFSTR_MS_ENABLE_HGRID           "vu_meter.enable_hgrid"
-#define     CONFSTR_MS_ENABLE_VGRID           "vu_meter.enable_vgrid"
-#define     CONFSTR_MS_ENABLE_BAR_MODE        "vu_meter.enable_bar_mode"
-#define     CONFSTR_MS_BAR_FALLOFF            "vu_meter.bar_falloff"
-#define     CONFSTR_MS_BAR_DELAY              "vu_meter.bar_delay"
-#define     CONFSTR_MS_PEAK_FALLOFF           "vu_meter.peak_falloff"
-#define     CONFSTR_MS_PEAK_DELAY             "vu_meter.peak_delay"
-#define     CONFSTR_MS_GRADIENT_ORIENTATION   "vu_meter.gradient_orientation"
-#define     CONFSTR_MS_COLOR_BG               "vu_meter.color.background"
-#define     CONFSTR_MS_COLOR_VGRID            "vu_meter.color.vgrid"
-#define     CONFSTR_MS_COLOR_HGRID            "vu_meter.color.hgrid"
-#define     CONFSTR_MS_COLOR_GRADIENT_00      "vu_meter.color.gradient_00"
-#define     CONFSTR_MS_COLOR_GRADIENT_01      "vu_meter.color.gradient_01"
-#define     CONFSTR_MS_COLOR_GRADIENT_02      "vu_meter.color.gradient_02"
-#define     CONFSTR_MS_COLOR_GRADIENT_03      "vu_meter.color.gradient_03"
-#define     CONFSTR_MS_COLOR_GRADIENT_04      "vu_meter.color.gradient_04"
-#define     CONFSTR_MS_COLOR_GRADIENT_05      "vu_meter.color.gradient_05"
+#define     CONFSTR_VM_REFRESH_INTERVAL       "vu_meter.refresh_interval"
+#define     CONFSTR_VM_DB_RANGE               "vu_meter.db_range"
+#define     CONFSTR_VM_ENABLE_HGRID           "vu_meter.enable_hgrid"
+#define     CONFSTR_VM_ENABLE_VGRID           "vu_meter.enable_vgrid"
+#define     CONFSTR_VM_ENABLE_BAR_MODE        "vu_meter.enable_bar_mode"
+#define     CONFSTR_VM_BAR_FALLOFF            "vu_meter.bar_falloff"
+#define     CONFSTR_VM_BAR_DELAY              "vu_meter.bar_delay"
+#define     CONFSTR_VM_PEAK_FALLOFF           "vu_meter.peak_falloff"
+#define     CONFSTR_VM_PEAK_DELAY             "vu_meter.peak_delay"
+#define     CONFSTR_VM_GRADIENT_ORIENTATION   "vu_meter.gradient_orientation"
+#define     CONFSTR_VM_NUM_COLORS             "vu_meter.num_colors"
+#define     CONFSTR_VM_COLOR_BG               "vu_meter.color.background"
+#define     CONFSTR_VM_COLOR_VGRID            "vu_meter.color.vgrid"
+#define     CONFSTR_VM_COLOR_HGRID            "vu_meter.color.hgrid"
+#define     CONFSTR_VM_COLOR_GRADIENT_00      "vu_meter.color.gradient_00"
+#define     CONFSTR_VM_COLOR_GRADIENT_01      "vu_meter.color.gradient_01"
+#define     CONFSTR_VM_COLOR_GRADIENT_02      "vu_meter.color.gradient_02"
+#define     CONFSTR_VM_COLOR_GRADIENT_03      "vu_meter.color.gradient_03"
+#define     CONFSTR_VM_COLOR_GRADIENT_04      "vu_meter.color.gradient_04"
+#define     CONFSTR_VM_COLOR_GRADIENT_05      "vu_meter.color.gradient_05"
 
 /* Global variables */
 static DB_misc_t            plugin;
@@ -112,69 +113,71 @@ static uint32_t CONFIG_COLOR_HGRID32 = 0xff666666;
 static void
 save_config (void)
 {
-    deadbeef->conf_set_int (CONFSTR_MS_REFRESH_INTERVAL,            CONFIG_REFRESH_INTERVAL);
-    deadbeef->conf_set_int (CONFSTR_MS_DB_RANGE,                    CONFIG_DB_RANGE);
-    deadbeef->conf_set_int (CONFSTR_MS_ENABLE_HGRID,                CONFIG_ENABLE_HGRID);
-    deadbeef->conf_set_int (CONFSTR_MS_ENABLE_VGRID,                CONFIG_ENABLE_VGRID);
-    deadbeef->conf_set_int (CONFSTR_MS_ENABLE_BAR_MODE,             CONFIG_ENABLE_BAR_MODE);
-    deadbeef->conf_set_int (CONFSTR_MS_BAR_FALLOFF,                 CONFIG_BAR_FALLOFF);
-    deadbeef->conf_set_int (CONFSTR_MS_BAR_DELAY,                   CONFIG_BAR_DELAY);
-    deadbeef->conf_set_int (CONFSTR_MS_PEAK_FALLOFF,                CONFIG_PEAK_FALLOFF);
-    deadbeef->conf_set_int (CONFSTR_MS_PEAK_DELAY,                  CONFIG_PEAK_DELAY);
-    deadbeef->conf_set_int (CONFSTR_MS_GRADIENT_ORIENTATION,        CONFIG_GRADIENT_ORIENTATION);
+    deadbeef->conf_set_int (CONFSTR_VM_REFRESH_INTERVAL,            CONFIG_REFRESH_INTERVAL);
+    deadbeef->conf_set_int (CONFSTR_VM_DB_RANGE,                    CONFIG_DB_RANGE);
+    deadbeef->conf_set_int (CONFSTR_VM_ENABLE_HGRID,                CONFIG_ENABLE_HGRID);
+    deadbeef->conf_set_int (CONFSTR_VM_ENABLE_VGRID,                CONFIG_ENABLE_VGRID);
+    deadbeef->conf_set_int (CONFSTR_VM_ENABLE_BAR_MODE,             CONFIG_ENABLE_BAR_MODE);
+    deadbeef->conf_set_int (CONFSTR_VM_BAR_FALLOFF,                 CONFIG_BAR_FALLOFF);
+    deadbeef->conf_set_int (CONFSTR_VM_BAR_DELAY,                   CONFIG_BAR_DELAY);
+    deadbeef->conf_set_int (CONFSTR_VM_PEAK_FALLOFF,                CONFIG_PEAK_FALLOFF);
+    deadbeef->conf_set_int (CONFSTR_VM_PEAK_DELAY,                  CONFIG_PEAK_DELAY);
+    deadbeef->conf_set_int (CONFSTR_VM_GRADIENT_ORIENTATION,        CONFIG_GRADIENT_ORIENTATION);
+    deadbeef->conf_set_int (CONFSTR_VM_NUM_COLORS,                  CONFIG_NUM_COLORS);
     char color[100];
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_COLOR_BG.red, CONFIG_COLOR_BG.green, CONFIG_COLOR_BG.blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_BG, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_BG, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_COLOR_VGRID.red, CONFIG_COLOR_VGRID.green, CONFIG_COLOR_VGRID.blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_VGRID, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_VGRID, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_COLOR_HGRID.red, CONFIG_COLOR_HGRID.green, CONFIG_COLOR_HGRID.blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_HGRID, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_HGRID, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_GRADIENT_COLORS[0].red, CONFIG_GRADIENT_COLORS[0].green, CONFIG_GRADIENT_COLORS[0].blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_GRADIENT_00, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_GRADIENT_00, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_GRADIENT_COLORS[1].red, CONFIG_GRADIENT_COLORS[1].green, CONFIG_GRADIENT_COLORS[1].blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_GRADIENT_01, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_GRADIENT_01, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_GRADIENT_COLORS[2].red, CONFIG_GRADIENT_COLORS[2].green, CONFIG_GRADIENT_COLORS[2].blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_GRADIENT_02, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_GRADIENT_02, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_GRADIENT_COLORS[3].red, CONFIG_GRADIENT_COLORS[3].green, CONFIG_GRADIENT_COLORS[3].blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_GRADIENT_03, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_GRADIENT_03, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_GRADIENT_COLORS[4].red, CONFIG_GRADIENT_COLORS[4].green, CONFIG_GRADIENT_COLORS[4].blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_GRADIENT_04, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_GRADIENT_04, color);
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_GRADIENT_COLORS[5].red, CONFIG_GRADIENT_COLORS[5].green, CONFIG_GRADIENT_COLORS[5].blue);
-    deadbeef->conf_set_str (CONFSTR_MS_COLOR_GRADIENT_05, color);
+    deadbeef->conf_set_str (CONFSTR_VM_COLOR_GRADIENT_05, color);
 }
 
 static void
 load_config (void)
 {
     deadbeef->conf_lock ();
-    CONFIG_GRADIENT_ORIENTATION = deadbeef->conf_get_int (CONFSTR_MS_GRADIENT_ORIENTATION,   0);
-    CONFIG_DB_RANGE = deadbeef->conf_get_int (CONFSTR_MS_DB_RANGE,                          70);
-    CONFIG_ENABLE_HGRID = deadbeef->conf_get_int (CONFSTR_MS_ENABLE_HGRID,                   1);
-    CONFIG_ENABLE_VGRID = deadbeef->conf_get_int (CONFSTR_MS_ENABLE_VGRID,                   1);
-    CONFIG_ENABLE_BAR_MODE = deadbeef->conf_get_int (CONFSTR_MS_ENABLE_BAR_MODE,             0);
-    CONFIG_REFRESH_INTERVAL = deadbeef->conf_get_int (CONFSTR_MS_REFRESH_INTERVAL,          25);
-    CONFIG_BAR_FALLOFF = deadbeef->conf_get_int (CONFSTR_MS_BAR_FALLOFF,                    -1);
-    CONFIG_BAR_DELAY = deadbeef->conf_get_int (CONFSTR_MS_BAR_DELAY,                         0);
-    CONFIG_PEAK_FALLOFF = deadbeef->conf_get_int (CONFSTR_MS_PEAK_FALLOFF,                  90);
-    CONFIG_PEAK_DELAY = deadbeef->conf_get_int (CONFSTR_MS_PEAK_DELAY,                     500);
+    CONFIG_GRADIENT_ORIENTATION = deadbeef->conf_get_int (CONFSTR_VM_GRADIENT_ORIENTATION,   0);
+    CONFIG_DB_RANGE = deadbeef->conf_get_int (CONFSTR_VM_DB_RANGE,                          70);
+    CONFIG_ENABLE_HGRID = deadbeef->conf_get_int (CONFSTR_VM_ENABLE_HGRID,                   1);
+    CONFIG_ENABLE_VGRID = deadbeef->conf_get_int (CONFSTR_VM_ENABLE_VGRID,                   1);
+    CONFIG_ENABLE_BAR_MODE = deadbeef->conf_get_int (CONFSTR_VM_ENABLE_BAR_MODE,             0);
+    CONFIG_REFRESH_INTERVAL = deadbeef->conf_get_int (CONFSTR_VM_REFRESH_INTERVAL,          25);
+    CONFIG_BAR_FALLOFF = deadbeef->conf_get_int (CONFSTR_VM_BAR_FALLOFF,                    -1);
+    CONFIG_BAR_DELAY = deadbeef->conf_get_int (CONFSTR_VM_BAR_DELAY,                         0);
+    CONFIG_PEAK_FALLOFF = deadbeef->conf_get_int (CONFSTR_VM_PEAK_FALLOFF,                  90);
+    CONFIG_PEAK_DELAY = deadbeef->conf_get_int (CONFSTR_VM_PEAK_DELAY,                     500);
+    CONFIG_NUM_COLORS = deadbeef->conf_get_int (CONFSTR_VM_NUM_COLORS,                       6);
     const char *color;
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_BG,                   "8738 8738 8738");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_BG,                   "8738 8738 8738");
     sscanf (color, "%hd %hd %hd", &CONFIG_COLOR_BG.red, &CONFIG_COLOR_BG.green, &CONFIG_COLOR_BG.blue);
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_VGRID,                         "0 0 0");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_VGRID,                         "0 0 0");
     sscanf (color, "%hd %hd %hd", &CONFIG_COLOR_VGRID.red, &CONFIG_COLOR_VGRID.green, &CONFIG_COLOR_VGRID.blue);
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_HGRID,             "26214 26214 26214");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_HGRID,             "26214 26214 26214");
     sscanf (color, "%hd %hd %hd", &CONFIG_COLOR_HGRID.red, &CONFIG_COLOR_HGRID.green, &CONFIG_COLOR_HGRID.blue);
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_GRADIENT_00,        "65535 0 0");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_GRADIENT_00,        "65535 0 0");
     sscanf (color, "%hd %hd %hd", &(CONFIG_GRADIENT_COLORS[0].red), &(CONFIG_GRADIENT_COLORS[0].green), &(CONFIG_GRADIENT_COLORS[0].blue));
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_GRADIENT_01,      "65535 32896 0");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_GRADIENT_01,      "65535 32896 0");
     sscanf (color, "%hd %hd %hd", &(CONFIG_GRADIENT_COLORS[1].red), &(CONFIG_GRADIENT_COLORS[1].green), &(CONFIG_GRADIENT_COLORS[1].blue));
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_GRADIENT_02,      "65535 65535 0");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_GRADIENT_02,      "65535 65535 0");
     sscanf (color, "%hd %hd %hd", &(CONFIG_GRADIENT_COLORS[2].red), &(CONFIG_GRADIENT_COLORS[2].green), &(CONFIG_GRADIENT_COLORS[2].blue));
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_GRADIENT_03,    "32896 65535 30840");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_GRADIENT_03,    "32896 65535 30840");
     sscanf (color, "%hd %hd %hd", &(CONFIG_GRADIENT_COLORS[3].red), &(CONFIG_GRADIENT_COLORS[3].green), &(CONFIG_GRADIENT_COLORS[3].blue));
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_GRADIENT_04,      "0 38036 41120");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_GRADIENT_04,      "0 38036 41120");
     sscanf (color, "%hd %hd %hd", &(CONFIG_GRADIENT_COLORS[4].red), &(CONFIG_GRADIENT_COLORS[4].green), &(CONFIG_GRADIENT_COLORS[4].blue));
-    color = deadbeef->conf_get_str_fast (CONFSTR_MS_COLOR_GRADIENT_05,       "0 8224 25700");
+    color = deadbeef->conf_get_str_fast (CONFSTR_VM_COLOR_GRADIENT_05,       "0 8224 25700");
     sscanf (color, "%hd %hd %hd", &(CONFIG_GRADIENT_COLORS[5].red), &(CONFIG_GRADIENT_COLORS[5].green), &(CONFIG_GRADIENT_COLORS[5].blue));
 
     float scale = 255/65535.f;
@@ -383,6 +386,7 @@ on_config_changed (gpointer user_data, uintptr_t ctx)
 {
     w_vumeter_t *w = user_data;
     load_config ();
+    create_gradient_table (w, CONFIG_GRADIENT_COLORS, CONFIG_NUM_COLORS);
     return 0;
 }
 
@@ -1165,11 +1169,11 @@ vu_meter_disconnect (void)
 }
 
 static const char settings_dlg[] =
-    "property \"Refresh interval (ms): \"           spinbtn[10,1000,1] "      CONFSTR_MS_REFRESH_INTERVAL         " 25 ;\n"
-    "property \"Bar falloff (dB/s): \"           spinbtn[-1,1000,1] "      CONFSTR_MS_BAR_FALLOFF         " -1 ;\n"
-    "property \"Bar delay (ms): \"                spinbtn[0,10000,100] "      CONFSTR_MS_BAR_DELAY           " 0 ;\n"
-    "property \"Peak falloff (dB/s): \"          spinbtn[-1,1000,1] "      CONFSTR_MS_PEAK_FALLOFF        " 90 ;\n"
-    "property \"Peak delay (ms): \"               spinbtn[0,10000,100] "      CONFSTR_MS_PEAK_DELAY          " 500 ;\n"
+    "property \"Refresh interval (ms): \"           spinbtn[10,1000,1] "      CONFSTR_VM_REFRESH_INTERVAL         " 25 ;\n"
+    "property \"Bar falloff (dB/s): \"           spinbtn[-1,1000,1] "      CONFSTR_VM_BAR_FALLOFF         " -1 ;\n"
+    "property \"Bar delay (ms): \"                spinbtn[0,10000,100] "      CONFSTR_VM_BAR_DELAY           " 0 ;\n"
+    "property \"Peak falloff (dB/s): \"          spinbtn[-1,1000,1] "      CONFSTR_VM_PEAK_FALLOFF        " 90 ;\n"
+    "property \"Peak delay (ms): \"               spinbtn[0,10000,100] "      CONFSTR_VM_PEAK_DELAY          " 500 ;\n"
 ;
 
 static DB_misc_t plugin = {
