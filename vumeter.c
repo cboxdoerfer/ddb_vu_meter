@@ -814,12 +814,13 @@ vumeter_wavedata_listener (void *ctx, ddb_audio_data_t *data) {
     w->channels = MIN (MAX_CHANNELS, data->fmt->channels);
     int nsamples = data->nframes/w->channels;
 
-    for (int c = 0; c < w->channels; c++) {
-        w->data[c] = 0;
-        for (int s = 0; s < nsamples + c; s++) {
-            w->data[c] += (data->data[ftoi (s * data->fmt->channels) + c] * data->data[ftoi (s * data->fmt->channels) + c]);
+    for (int channel = 0; channel < w->channels; channel++) {
+        w->data[channel] = 0;
+        for (int s = 0; s < nsamples + channel; s++) {
+            float amplitude = data->data[ftoi (s * data->fmt->channels) + channel];
+            w->data[channel] += amplitude * amplitude;
         }
-        w->data[c] = sqrt (w->data[c]/nsamples);
+        w->data[channel] = sqrt (w->data[channel]/nsamples);
     }
     deadbeef->mutex_unlock (w->mutex);
 }
@@ -971,7 +972,7 @@ vumeter_draw (GtkWidget *widget, cairo_t *cr, gpointer user_data) {
     if (deadbeef->get_output ()->state () == OUTPUT_STATE_PLAYING) {
         for (int i = 0; i < bands; i++)
         {
-            float x = CONFIG_DB_RANGE + (10.0 * log10f (w->data[i]));
+            float x = CONFIG_DB_RANGE + (20.0 * log10f (w->data[i]));
             // TODO: get rid of hardcoding
             //x += CONFIG_DB_RANGE - 63;
             //if (x > CONFIG_DB_RANGE) {
