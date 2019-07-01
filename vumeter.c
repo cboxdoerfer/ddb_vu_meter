@@ -837,28 +837,29 @@ vumeter_draw_retro (w_vumeter_t *w, cairo_t *cr, int width, int height)
         if (home_dir && strcmp(home_dir, "") == 0) {
             home_dir = NULL;
         }
-        const int sz = snprintf (path, PATH_MAX, "%s/vumeter.png", home_dir);
+        const int sz = snprintf (path, PATH_MAX, "%s/.local/lib/deadbeef/vumeterStereo.png", home_dir);
         if (!home_dir || !path) {
             return;
         }
         w->surf_png = cairo_image_surface_create_from_png (path);
     }
 
-    int m_radius = 130;
+    int m_radius = 430;
     float start = M_PI * 3/4;
-    float value = 0;
-    int c = 0;
-    for (; c < w->channels; c++) {
-        value = MAX (value, w->bars[c]);
-    }
+
     cairo_set_source_surface (cr, w->surf_png, 0, 0);
     cairo_paint (cr);
-    cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
+    cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_set_line_width(cr, 2);
     int surf_width = cairo_image_surface_get_width (w->surf_png);
     int surf_height = cairo_image_surface_get_height (w->surf_png);
-    cairo_move_to (cr, surf_width/2, surf_height - 23);
-    cairo_line_to (cr, surf_width/2 + m_radius * cos (value * M_PI / (CONFIG_DB_RANGE*2.5) - start), surf_height - 23 + m_radius * sin (value * M_PI / (CONFIG_DB_RANGE*2.5)-start));
+
+    int c = 0;
+    for (; c < w->channels; c++) {
+        cairo_move_to (cr, surf_width / 4 * (1 + (c * 2)), surf_height - 23);
+        cairo_line_to (cr, surf_width / 4 * (1 + (c * 2)) + m_radius * cos (w->bars[c] * M_PI / (CONFIG_DB_RANGE*2.5) - start), surf_height - 23 + m_radius * sin (w->bars[c] * M_PI / (CONFIG_DB_RANGE*2.5)-start));
+    }
+
     cairo_stroke (cr);
 }
 
