@@ -44,6 +44,7 @@
 #define     STR_GRADIENT_VERTICAL "Vertical"
 #define     STR_GRADIENT_HORIZONTAL "Horizontal"
 
+#define     CONFSTR_VM_STYLE                  "vu_meter.style"
 #define     CONFSTR_VM_REFRESH_INTERVAL       "vu_meter.refresh_interval"
 #define     CONFSTR_VM_DB_RANGE               "vu_meter.db_range"
 #define     CONFSTR_VM_ENABLE_HGRID           "vu_meter.enable_hgrid"
@@ -113,6 +114,7 @@ static uint32_t CONFIG_COLOR_HGRID32 = 0xff666666;
 static void
 save_config (void)
 {
+    deadbeef->conf_set_int (CONFSTR_VM_STYLE,                       CONFIG_STYLE);
     deadbeef->conf_set_int (CONFSTR_VM_REFRESH_INTERVAL,            CONFIG_REFRESH_INTERVAL);
     deadbeef->conf_set_int (CONFSTR_VM_DB_RANGE,                    CONFIG_DB_RANGE);
     deadbeef->conf_set_int (CONFSTR_VM_ENABLE_HGRID,                CONFIG_ENABLE_HGRID);
@@ -149,6 +151,7 @@ static void
 load_config (void)
 {
     deadbeef->conf_lock ();
+    CONFIG_STYLE = deadbeef->conf_get_int (CONFSTR_VM_STYLE,                                 0);
     CONFIG_GRADIENT_ORIENTATION = deadbeef->conf_get_int (CONFSTR_VM_GRADIENT_ORIENTATION,   0);
     CONFIG_DB_RANGE = deadbeef->conf_get_int (CONFSTR_VM_DB_RANGE,                          70);
     CONFIG_ENABLE_HGRID = deadbeef->conf_get_int (CONFSTR_VM_ENABLE_HGRID,                   1);
