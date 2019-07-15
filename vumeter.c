@@ -44,6 +44,7 @@
 #define     STR_GRADIENT_VERTICAL "Vertical"
 #define     STR_GRADIENT_HORIZONTAL "Horizontal"
 
+#define     CONFSTR_VM_STYLE                  "vu_meter.style"
 #define     CONFSTR_VM_REFRESH_INTERVAL       "vu_meter.refresh_interval"
 #define     CONFSTR_VM_DB_RANGE               "vu_meter.db_range"
 #define     CONFSTR_VM_ENABLE_HGRID           "vu_meter.enable_hgrid"
@@ -113,6 +114,7 @@ static uint32_t CONFIG_COLOR_HGRID32 = 0xff666666;
 static void
 save_config (void)
 {
+    deadbeef->conf_set_int (CONFSTR_VM_STYLE,                       CONFIG_STYLE);
     deadbeef->conf_set_int (CONFSTR_VM_REFRESH_INTERVAL,            CONFIG_REFRESH_INTERVAL);
     deadbeef->conf_set_int (CONFSTR_VM_DB_RANGE,                    CONFIG_DB_RANGE);
     deadbeef->conf_set_int (CONFSTR_VM_ENABLE_HGRID,                CONFIG_ENABLE_HGRID);
@@ -149,6 +151,7 @@ static void
 load_config (void)
 {
     deadbeef->conf_lock ();
+    CONFIG_STYLE = deadbeef->conf_get_int (CONFSTR_VM_STYLE,                                 0);
     CONFIG_GRADIENT_ORIENTATION = deadbeef->conf_get_int (CONFSTR_VM_GRADIENT_ORIENTATION,   0);
     CONFIG_DB_RANGE = deadbeef->conf_get_int (CONFSTR_VM_DB_RANGE,                          70);
     CONFIG_ENABLE_HGRID = deadbeef->conf_get_int (CONFSTR_VM_ENABLE_HGRID,                   1);
@@ -584,7 +587,7 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     gtk_widget_show (db_range_label0);
     gtk_box_pack_start (GTK_BOX (hbox03), db_range_label0, FALSE, TRUE, 0);
 
-    db_range = gtk_spin_button_new_with_range (50,120,10);
+    db_range = gtk_spin_button_new_with_range (10,120,10);
     gtk_widget_show (db_range);
     gtk_box_pack_start (GTK_BOX (hbox03), db_range, TRUE, TRUE, 0);
 
@@ -834,28 +837,42 @@ vumeter_draw_retro (w_vumeter_t *w, cairo_t *cr, int width, int height)
         if (home_dir && strcmp(home_dir, "") == 0) {
             home_dir = NULL;
         }
-        const int sz = snprintf (path, PATH_MAX, "%s/vumeter.png", home_dir);
+        const int sz = snprintf (path, PATH_MAX, "%s/.local/lib/deadbeef/vumeterStereo.png", home_dir);
         if (!home_dir || !path) {
             return;
         }
         w->surf_png = cairo_image_surface_create_from_png (path);
     }
 
-    int m_radius = 130;
-    float start = M_PI * 3/4;
-    float value = 0;
-    int c = 0;
-    for (; c < w->channels; c++) {
-        value = MAX (value, w->bars[c]);
+    const float image_width = cairo_image_surface_get_width (w->surf_png);
+    const float image_height = cairo_image_surface_get_height (w->surf_png);
+
+    const float xScaleFactor = width / image_width;
+    const float yScaleFactor = height / image_height;
+
+    float scaleFactor = xScaleFactor;
+    if ( yScaleFactor < xScaleFactor ) {
+        scaleFactor = yScaleFactor;
     }
+
+    cairo_scale (cr, scaleFactor, scaleFactor);
+
+    int m_radius = 430;
+    float start = M_PI * 23/32;
+
     cairo_set_source_surface (cr, w->surf_png, 0, 0);
     cairo_paint (cr);
-    cairo_set_source_rgb(cr, 0.3, 0.3, 0.3);
+    cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_set_line_width(cr, 2);
     int surf_width = cairo_image_surface_get_width (w->surf_png);
     int surf_height = cairo_image_surface_get_height (w->surf_png);
-    cairo_move_to (cr, surf_width/2, surf_height - 23);
-    cairo_line_to (cr, surf_width/2 + m_radius * cos (value * M_PI / (CONFIG_DB_RANGE*2.5) - start), surf_height - 23 + m_radius * sin (value * M_PI / (CONFIG_DB_RANGE*2.5)-start));
+
+    int c = 0;
+    for (; c < w->channels; c++) {
+        cairo_move_to (cr, surf_width / 4 * (1 + (c * 2)), surf_height - 23);
+        cairo_line_to (cr, surf_width / 4 * (1 + (c * 2)) + m_radius * cos (w->bars[c] * M_PI / (CONFIG_DB_RANGE*2.5) - start), surf_height - 23 + m_radius * sin (w->bars[c] * M_PI / (CONFIG_DB_RANGE*2.5)-start));
+    }
+
     cairo_stroke (cr);
 }
 
