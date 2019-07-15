@@ -587,7 +587,7 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     gtk_widget_show (db_range_label0);
     gtk_box_pack_start (GTK_BOX (hbox03), db_range_label0, FALSE, TRUE, 0);
 
-    db_range = gtk_spin_button_new_with_range (50,120,10);
+    db_range = gtk_spin_button_new_with_range (10,120,10);
     gtk_widget_show (db_range);
     gtk_box_pack_start (GTK_BOX (hbox03), db_range, TRUE, TRUE, 0);
 
@@ -844,8 +844,21 @@ vumeter_draw_retro (w_vumeter_t *w, cairo_t *cr, int width, int height)
         w->surf_png = cairo_image_surface_create_from_png (path);
     }
 
+    const float image_width = cairo_image_surface_get_width (w->surf_png);
+    const float image_height = cairo_image_surface_get_height (w->surf_png);
+
+    const float xScaleFactor = width / image_width;
+    const float yScaleFactor = height / image_height;
+
+    float scaleFactor = xScaleFactor;
+    if ( yScaleFactor < xScaleFactor ) {
+        scaleFactor = yScaleFactor;
+    }
+
+    cairo_scale (cr, scaleFactor, scaleFactor);
+
     int m_radius = 430;
-    float start = M_PI * 3/4;
+    float start = M_PI * 23/32;
 
     cairo_set_source_surface (cr, w->surf_png, 0, 0);
     cairo_paint (cr);
