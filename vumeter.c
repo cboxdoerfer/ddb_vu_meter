@@ -44,26 +44,27 @@
 #define     STR_GRADIENT_VERTICAL "Vertical"
 #define     STR_GRADIENT_HORIZONTAL "Horizontal"
 
-#define     CONFSTR_VM_REFRESH_INTERVAL       "vu_meter.refresh_interval"
-#define     CONFSTR_VM_DB_RANGE               "vu_meter.db_range"
-#define     CONFSTR_VM_ENABLE_HGRID           "vu_meter.enable_hgrid"
-#define     CONFSTR_VM_ENABLE_VGRID           "vu_meter.enable_vgrid"
-#define     CONFSTR_VM_ENABLE_BAR_MODE        "vu_meter.enable_bar_mode"
-#define     CONFSTR_VM_BAR_FALLOFF            "vu_meter.bar_falloff"
-#define     CONFSTR_VM_BAR_DELAY              "vu_meter.bar_delay"
-#define     CONFSTR_VM_PEAK_FALLOFF           "vu_meter.peak_falloff"
-#define     CONFSTR_VM_PEAK_DELAY             "vu_meter.peak_delay"
-#define     CONFSTR_VM_GRADIENT_ORIENTATION   "vu_meter.gradient_orientation"
-#define     CONFSTR_VM_NUM_COLORS             "vu_meter.num_colors"
-#define     CONFSTR_VM_COLOR_BG               "vu_meter.color.background"
-#define     CONFSTR_VM_COLOR_VGRID            "vu_meter.color.vgrid"
-#define     CONFSTR_VM_COLOR_HGRID            "vu_meter.color.hgrid"
-#define     CONFSTR_VM_COLOR_GRADIENT_00      "vu_meter.color.gradient_00"
-#define     CONFSTR_VM_COLOR_GRADIENT_01      "vu_meter.color.gradient_01"
-#define     CONFSTR_VM_COLOR_GRADIENT_02      "vu_meter.color.gradient_02"
-#define     CONFSTR_VM_COLOR_GRADIENT_03      "vu_meter.color.gradient_03"
-#define     CONFSTR_VM_COLOR_GRADIENT_04      "vu_meter.color.gradient_04"
-#define     CONFSTR_VM_COLOR_GRADIENT_05      "vu_meter.color.gradient_05"
+#define     CONFSTR_VM_REFRESH_INTERVAL             "vu_meter.refresh_interval"
+#define     CONFSTR_VM_DB_RANGE                     "vu_meter.db_range"
+#define     CONFSTR_VM_ENABLE_HGRID                 "vu_meter.enable_hgrid"
+#define     CONFSTR_VM_ENABLE_VGRID                 "vu_meter.enable_vgrid"
+#define     CONFSTR_VM_ENABLE_BAR_MODE              "vu_meter.enable_bar_mode"
+#define     CONFSTR_VM_BAR_FALLOFF                  "vu_meter.bar_falloff"
+#define     CONFSTR_VM_BAR_DELAY                    "vu_meter.bar_delay"
+#define     CONFSTR_VM_PEAK_FALLOFF                 "vu_meter.peak_falloff"
+#define     CONFSTR_VM_PEAK_DELAY                   "vu_meter.peak_delay"
+#define     CONFSTR_VM_GRADIENT_ORIENTATION         "vu_meter.gradient_orientation"
+#define     CONFSTR_VM_GRADIENT_BAR_ORIENTATION     "vu_meter.gradient_bar_orientation"
+#define     CONFSTR_VM_NUM_COLORS                   "vu_meter.num_colors"
+#define     CONFSTR_VM_COLOR_BG                     "vu_meter.color.background"
+#define     CONFSTR_VM_COLOR_VGRID                  "vu_meter.color.vgrid"
+#define     CONFSTR_VM_COLOR_HGRID                  "vu_meter.color.hgrid"
+#define     CONFSTR_VM_COLOR_GRADIENT_00            "vu_meter.color.gradient_00"
+#define     CONFSTR_VM_COLOR_GRADIENT_01            "vu_meter.color.gradient_01"
+#define     CONFSTR_VM_COLOR_GRADIENT_02            "vu_meter.color.gradient_02"
+#define     CONFSTR_VM_COLOR_GRADIENT_03            "vu_meter.color.gradient_03"
+#define     CONFSTR_VM_COLOR_GRADIENT_04            "vu_meter.color.gradient_04"
+#define     CONFSTR_VM_COLOR_GRADIENT_05            "vu_meter.color.gradient_05"
 
 /* Global variables */
 static DB_misc_t            plugin;
@@ -101,6 +102,7 @@ static int CONFIG_BAR_DELAY = 0;
 static int CONFIG_PEAK_FALLOFF = 90;
 static int CONFIG_PEAK_DELAY = 500;
 static int CONFIG_GRADIENT_ORIENTATION = 0;
+static int CONFIG_GRADIENT_BAR_ORIENTATION = 0;
 static int CONFIG_NUM_COLORS = 6;
 static GdkColor CONFIG_COLOR_BG;
 static GdkColor CONFIG_COLOR_VGRID;
@@ -123,6 +125,7 @@ save_config (void)
     deadbeef->conf_set_int (CONFSTR_VM_PEAK_FALLOFF,                CONFIG_PEAK_FALLOFF);
     deadbeef->conf_set_int (CONFSTR_VM_PEAK_DELAY,                  CONFIG_PEAK_DELAY);
     deadbeef->conf_set_int (CONFSTR_VM_GRADIENT_ORIENTATION,        CONFIG_GRADIENT_ORIENTATION);
+    deadbeef->conf_set_int (CONFSTR_VM_GRADIENT_BAR_ORIENTATION,    CONFIG_GRADIENT_BAR_ORIENTATION);
     deadbeef->conf_set_int (CONFSTR_VM_NUM_COLORS,                  CONFIG_NUM_COLORS);
     char color[100];
     snprintf (color, sizeof (color), "%d %d %d", CONFIG_COLOR_BG.red, CONFIG_COLOR_BG.green, CONFIG_COLOR_BG.blue);
@@ -150,6 +153,7 @@ load_config (void)
 {
     deadbeef->conf_lock ();
     CONFIG_GRADIENT_ORIENTATION = deadbeef->conf_get_int (CONFSTR_VM_GRADIENT_ORIENTATION,   0);
+    CONFIG_GRADIENT_BAR_ORIENTATION = deadbeef->conf_get_int (CONFSTR_VM_GRADIENT_BAR_ORIENTATION,   0);
     CONFIG_DB_RANGE = deadbeef->conf_get_int (CONFSTR_VM_DB_RANGE,                          70);
     CONFIG_ENABLE_HGRID = deadbeef->conf_get_int (CONFSTR_VM_ENABLE_HGRID,                   1);
     CONFIG_ENABLE_VGRID = deadbeef->conf_get_int (CONFSTR_VM_ENABLE_VGRID,                   1);
@@ -261,7 +265,7 @@ _draw_bar (uint8_t *data, int stride, int x0, int y0, int w, int h, uint32_t col
 }
 
 static inline void
-_draw_bar_gradient_v (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_h) {
+_draw_v_bar_gradient_v (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_h) {
     w_vumeter_t *s = user_data;
     int y1 = y0+h-1;
     int x1 = x0+w-1;
@@ -279,7 +283,7 @@ _draw_bar_gradient_v (gpointer user_data, uint8_t *data, int stride, int x0, int
 }
 
 static inline void
-_draw_bar_gradient_h (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_w) {
+_draw_v_bar_gradient_h (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_w) {
     w_vumeter_t *s = user_data;
     int y1 = y0+h-1;
     int x1 = x0+w-1;
@@ -297,7 +301,7 @@ _draw_bar_gradient_h (gpointer user_data, uint8_t *data, int stride, int x0, int
 }
 
 static inline void
-_draw_bar_gradient_bar_mode_v (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_h) {
+_draw_v_bar_gradient_v_bar_mode (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_h) {
     w_vumeter_t *s = user_data;
     int y1 = y0+h-1;
     int x1 = x0+w-1;
@@ -316,7 +320,7 @@ _draw_bar_gradient_bar_mode_v (gpointer user_data, uint8_t *data, int stride, in
 }
 
 static inline void
-_draw_bar_gradient_bar_mode_h (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_w) {
+_draw_v_bar_gradient_h_bar_mode (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_w) {
     w_vumeter_t *s = user_data;
     int y1 = y0+h-1;
     int x1 = x0+w-1;
@@ -331,6 +335,90 @@ _draw_bar_gradient_bar_mode_h (gpointer user_data, uint8_t *data, int stride, in
         }
         y0 += 2;
         ptr += stride/2-w;
+    }
+}
+
+static inline void
+_draw_h_bar_gradient_v (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_h) {
+    w_vumeter_t *s = user_data;
+    uint32_t *ptr;
+    int x = x0;
+    int y = y0;
+    int index;
+    while(x <= w) {
+        y = y0;
+        ptr = (uint32_t*)&data[y*stride+x*4];
+        while(y <= (y0 + h)) {
+            index = ftoi(((double)y/(double)total_h) * (GRADIENT_TABLE_SIZE - 1));
+            index = CLAMP (index, 0, GRADIENT_TABLE_SIZE - 1);
+            *ptr = s->colors[index];
+            ptr += stride/4;
+            y++;
+        }
+        x++;
+    }
+}
+
+static inline void
+_draw_h_bar_gradient_h (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_w) {
+    w_vumeter_t *s = user_data;
+    uint32_t *ptr;
+    int x = x0;
+    int y = y0;
+    int index;
+    while(x <= w) {
+        y = y0;
+        ptr = (uint32_t*)&data[y*stride+x*4];
+        index = ftoi(((double)x/(double)total_w) * (GRADIENT_TABLE_SIZE - 1));
+        index = CLAMP (index, 0, GRADIENT_TABLE_SIZE - 1);
+        while(y <= (y0 + h)) {
+            *ptr = s->colors[index];
+            ptr += stride/4;
+            y++;
+        }
+        x++;
+    }
+}
+
+static inline void
+_draw_h_bar_gradient_v_bar_mode (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_h) {
+    w_vumeter_t *s = user_data;
+    uint32_t *ptr;
+    int x = x0;
+    int y = y0;
+    int index;
+    while(x <= w) {
+        y = y0;
+        ptr = (uint32_t*)&data[y*stride+x*4];
+        while(y <= (y0 + h)) {
+            index = ftoi(((double)y/(double)total_h) * (GRADIENT_TABLE_SIZE - 1));
+            index = CLAMP (index, 0, GRADIENT_TABLE_SIZE - 1);
+            *ptr = s->colors[index];
+            ptr += stride/4;
+            y++;
+        }
+        x += 2;
+    }
+}
+
+static inline void
+_draw_h_bar_gradient_h_bar_mode (gpointer user_data, uint8_t *data, int stride, int x0, int y0, int w, int h, int total_w) {
+    w_vumeter_t *s = user_data;
+    uint32_t *ptr;
+    int x = x0;
+    int y = y0;
+    int index;
+    while(x <= w) {
+        y = y0;
+        ptr = (uint32_t*)&data[y*stride+x*4];
+        index = ftoi(((double)x/(double)total_w) * (GRADIENT_TABLE_SIZE - 1));
+        index = CLAMP (index, 0, GRADIENT_TABLE_SIZE - 1);
+        while(y <= (y0 + h)) {
+            *ptr = s->colors[index];
+            ptr += stride/4;
+            y++;
+        }
+        x += 2;
     }
 }
 
@@ -427,12 +515,15 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     GtkWidget *hgrid;
     GtkWidget *vgrid;
     GtkWidget *bar_mode;
-    GtkWidget *hbox06;
+    GtkWidget *hbox07;
     GtkWidget *style_label;
     GtkWidget *style;
     GtkWidget *hbox05;
     GtkWidget *gradient_orientation_label;
     GtkWidget *gradient_orientation;
+    GtkWidget *hbox06;
+    GtkWidget *gradient_bar_orientation_label;
+    GtkWidget *gradient_bar_orientation;
     GtkWidget *dialog_action_area13;
     GtkWidget *applybutton1;
     GtkWidget *cancelbutton1;
@@ -607,14 +698,29 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     gtk_widget_show (hbox06);
     gtk_box_pack_start (GTK_BOX (vbox02), hbox06, FALSE, FALSE, 0);
 
+    gradient_bar_orientation_label = gtk_label_new (NULL);
+    gtk_label_set_markup (GTK_LABEL (gradient_bar_orientation_label),"Bars orientation:");
+    gtk_widget_show (gradient_bar_orientation_label);
+    gtk_box_pack_start (GTK_BOX (hbox06), gradient_bar_orientation_label, FALSE, TRUE, 0);
+
+    gradient_bar_orientation = gtk_combo_box_text_new ();
+    gtk_widget_show (gradient_bar_orientation);
+    gtk_box_pack_start (GTK_BOX (hbox06), gradient_bar_orientation, TRUE, TRUE, 0);
+    gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT(gradient_bar_orientation), STR_GRADIENT_VERTICAL);
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(gradient_bar_orientation), STR_GRADIENT_HORIZONTAL);
+
+    hbox07 = gtk_hbox_new (FALSE, 8);
+    gtk_widget_show (hbox07);
+    gtk_box_pack_start (GTK_BOX (vbox02), hbox07, FALSE, FALSE, 0);
+
     style_label = gtk_label_new (NULL);
     gtk_label_set_markup (GTK_LABEL (style_label),"Style:");
     gtk_widget_show (style_label);
-    gtk_box_pack_start (GTK_BOX (hbox06), style_label, FALSE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox07), style_label, FALSE, TRUE, 0);
 
     style = gtk_combo_box_text_new ();
     gtk_widget_show (style);
-    gtk_box_pack_start (GTK_BOX (hbox06), style, TRUE, TRUE, 0);
+    gtk_box_pack_start (GTK_BOX (hbox07), style, TRUE, TRUE, 0);
     gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT(style), "Bars");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(style), "Retro");
 
@@ -653,6 +759,7 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (vgrid), CONFIG_ENABLE_VGRID);
     gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (bar_mode), CONFIG_ENABLE_BAR_MODE);
     gtk_combo_box_set_active (GTK_COMBO_BOX (gradient_orientation), CONFIG_GRADIENT_ORIENTATION);
+    gtk_combo_box_set_active (GTK_COMBO_BOX (gradient_bar_orientation), CONFIG_GRADIENT_BAR_ORIENTATION);
     gtk_combo_box_set_active (GTK_COMBO_BOX (style), CONFIG_STYLE);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (num_colors), CONFIG_NUM_COLORS);
     gtk_spin_button_set_value (GTK_SPIN_BUTTON (db_range), CONFIG_DB_RANGE);
@@ -738,6 +845,16 @@ on_button_config (GtkMenuItem *menuitem, gpointer user_data)
             }
             else {
                 CONFIG_GRADIENT_ORIENTATION = -1;
+            }
+            snprintf (text, sizeof (text), "%s", gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (gradient_bar_orientation)));
+            if (strcmp (text, STR_GRADIENT_VERTICAL) == 0) {
+                CONFIG_GRADIENT_BAR_ORIENTATION = 0;
+            }
+            else if (strcmp (text, STR_GRADIENT_HORIZONTAL) == 0) {
+                CONFIG_GRADIENT_BAR_ORIENTATION = 1;
+            }
+            else {
+                CONFIG_GRADIENT_BAR_ORIENTATION = -1;
             }
             snprintf (text, sizeof (text), "%s", gtk_combo_box_text_get_active_text (GTK_COMBO_BOX_TEXT (style)));
             if (strcmp (text, "Bars") == 0) {
@@ -875,6 +992,8 @@ vumeter_draw_bars (w_vumeter_t *w, cairo_t *cr, int width, int height)
     }
     float base_s = (height / (float)CONFIG_DB_RANGE);
 
+    float base_s1 = (width / (float)CONFIG_DB_RANGE);
+
     cairo_surface_flush (w->surf);
 
     unsigned char *data = cairo_image_surface_get_data (w->surf);
@@ -885,6 +1004,8 @@ vumeter_draw_bars (w_vumeter_t *w, cairo_t *cr, int width, int height)
     memset (data, 0, height * stride);
 
     int barw = CLAMP (width / bands, 2, 1000);
+
+    int barh = CLAMP (height / bands, 2, 1000);
 
     //draw background
     _draw_background (data, width, height, CONFIG_COLOR_BG32);
@@ -907,37 +1028,67 @@ vumeter_draw_bars (w_vumeter_t *w, cairo_t *cr, int width, int height)
     for (gint i = 0; i < bands; i++)
     {
         int x = barw * i;
+        int x1 = width - ftoi(w->bars[i] * base_s1);
         int y = height - ftoi (w->bars[i] * base_s);
+        int y1 = barh * i;
         if (y < 0) {
             y = 0;
         }
+        if (x1 < 0) {
+            x1 = 0;
+        }
         int bw = barw-1;
+        int bh = barh-1;
         if (x + bw >= width) {
             bw = width-x-1;
         }
+        if (y1 + bh >= height) {
+            bh = height-y1-1;
+        }
         if (CONFIG_GRADIENT_ORIENTATION == 0) {
             if (CONFIG_ENABLE_BAR_MODE == 0) {
-                _draw_bar_gradient_v (w, data, stride, x+1, y, bw, height-y, height);
+                if (CONFIG_GRADIENT_BAR_ORIENTATION == 0) {
+                    _draw_v_bar_gradient_v (w, data, stride, x+1, y, bw, height-y, height);
+                } else {
+                    _draw_h_bar_gradient_v (w, data, stride, 0, y1+i, width-x1, bh, height);
+                }
+            } else {
+                if (CONFIG_GRADIENT_BAR_ORIENTATION == 0) {
+                    _draw_v_bar_gradient_v_bar_mode (w, data, stride, x+1, y, bw, height-y, height);
+                } else {
+                    _draw_h_bar_gradient_v_bar_mode (w, data, stride, 0, y1+i, width-x1, bh, height);
+                }
             }
-            else {
-                _draw_bar_gradient_bar_mode_v (w, data, stride, x+1, y, bw, height-y, height);
-            }
-        }
-        else {
+        } else {
             if (CONFIG_ENABLE_BAR_MODE == 0) {
-                _draw_bar_gradient_h (w, data, stride, x+1, y, bw, height-y, width);
-            }
-            else {
-                _draw_bar_gradient_bar_mode_h (w, data, stride, x+1, y, bw, height-y, width);
+                if (CONFIG_GRADIENT_BAR_ORIENTATION == 0) {
+                    _draw_v_bar_gradient_h (w, data, stride, x+1, y, bw, height-y, width);
+                } else {
+                    _draw_h_bar_gradient_h (w, data, stride, 0, y1+i, width-x1, bh, width);
+                }
+            } else {
+                if (CONFIG_GRADIENT_BAR_ORIENTATION == 0) {
+                    _draw_v_bar_gradient_h_bar_mode (w, data, stride, x+1, y, bw, height-y, width);
+                } else {
+                    _draw_h_bar_gradient_h_bar_mode (w, data, stride, 0, y1+i, width-x1, bh, width);
+                }
             }
         }
         y = height - w->peaks[i] * base_s;
+        x1 = width - w->peaks[i] * base_s1;
         if (y < height-1) {
             if (CONFIG_GRADIENT_ORIENTATION == 0) {
-                _draw_bar_gradient_v (w, data, stride, x + 1, y, bw, 1, height);
-            }
-            else {
-                _draw_bar_gradient_h (w, data, stride, x + 1, y, bw, 1, width);
+                if (CONFIG_GRADIENT_BAR_ORIENTATION == 0) {
+                    _draw_v_bar_gradient_v (w, data, stride, x + 1, y, bw, 1, height);
+                } else {
+                    _draw_h_bar_gradient_v_bar_mode (w, data, stride, width-x1, y1+i, width-x1 + 1, bh, height);
+                }
+            } else { 
+                if (CONFIG_GRADIENT_BAR_ORIENTATION == 0) {
+                    _draw_v_bar_gradient_h (w, data, stride, x + 1, y, bw, 1, width);
+                } else {
+                    _draw_h_bar_gradient_h_bar_mode (w, data, stride, width-x1, y1+i, width-x1 + 1, bh, width);
+                }
             }
         }
     }
@@ -1263,3 +1414,4 @@ ddb_vis_vu_meter_GTK3_load (DB_functions_t *ddb) {
     return &plugin.plugin;
 }
 #endif
+
